@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3I/ATLAS 星際天體軌跡模擬器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: #000;
+            color: #fff;
+        }
+
+        #canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 350px;
+            z-index: 100;
+        }
+
+        #info-panel h1 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+
+        .info-item {
+            margin: 10px 0;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-label {
+            color: #aaa;
+        }
+
+        .info-value {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .closest-approach {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .closest-approach h3 {
+            font-size: 14px;
+            color: #4fc3f7;
+            margin-bottom: 10px;
+        }
+
+        .approach-item {
+            font-size: 12px;
+            margin: 5px 0;
+            color: #ddd;
+        }
+
+        .distance-display {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+            max-width: 200px;
+        }
+
+        .distance-display h3 {
+            font-size: 14px;
+            color: #4fc3f7;
+            margin-bottom: 10px;
+        }
+
+        .distance-item {
+            font-size: 12px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .distance-item.close {
+            color: #ffeb3b;
+            font-weight: bold;
+        }
+
+        .distance-item.very-close {
+            color: #ff5722;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        #zoom-controls {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .zoom-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
+
+        #zoom-level {
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+            width: 90%;
+            max-width: 900px;
+        }
+
+        #time-display {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #4fc3f7;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(79, 195, 247, 0.5);
+        }
+
+        #timeline-container {
+            position: relative;
+            margin: 20px 0;
+            padding: 10px 0;
+        }
+
+        #timeline {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 12px;
+            background: linear-gradient(to right, 
+                #1e3c72 0%, 
+                #2a5298 50%, 
+                #7e57c2 100%);
+            outline: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #timeline::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #4fc3f7;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.8);
+            border: 2px solid #fff;
+        }
+
+        #timeline::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #4fc3f7;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.8);
+            border: 2px solid #fff;
+        }
+
+        #month-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #888;
+            user-select: none;
+        }
+
+        .month-label {
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .month-label:hover {
+            color: #4fc3f7;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        #speed-control {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        #speed-control label {
+            font-size: 14px;
+        }
+
+        #speed-control input {
+            width: 150px;
+        }
+
+        #legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #4fc3f7;
+            z-index: 200;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <div id="loading">載入中...</div>
+        <canvas id="canvas"></canvas>
+        
+        <div id="info-panel">
+            <h1>3I/ATLAS 星際天體</h1>
+            <div class="info-item">
+                <span class="info-label">離心率:</span>
+                <span class="info-value">6.141±0.002</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">雙曲線超額速度:</span>
+                <span class="info-value">58 km/s</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">軌道傾角:</span>
+                <span class="info-value">175°</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">近日點:</span>
+                <span class="info-value">1.36 AU</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">近日點時間:</span>
+                <span class="info-value">2025年10月29日</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">目前距離太陽:</span>
+                <span class="info-value" id="current-distance">計算中...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">目前速度:</span>
+                <span class="info-value" id="current-velocity">計算中...</span>
+            </div>
+            <div class="closest-approach">
+                <h3>最接近時刻：</h3>
+                <div class="approach-item">火星: 2025/10/2 (0.19 AU)</div>
+                <div class="approach-item">金星: 2025/11/3 (0.65 AU)</div>
+                <div class="approach-item">地球: 2025/12/19 (1.80 AU)</div>
+                <div class="approach-item">木星: 2026/3/16 (3.36 AU)</div>
+            </div>
+        </div>
+
+        <div id="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFD700;"></div>
+                <span>太陽</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #8C7853;"></div>
+                <span>水星</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FDB813;"></div>
+                <span>金星</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4169E1;"></div>
+                <span>地球</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #CD5C5C;"></div>
+                <span>火星</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #DAA520;"></div>
+                <span>木星</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #F4A460;"></div>
+                <span>土星</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4FD0E0;"></div>
+                <span>天王星</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4169FF;"></div>
+                <span>海王星</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF0000;"></div>
+                <span>3I/ATLAS</span>
+            </div>
+        </div>
+
+        <div id="controls">
+            <div id="time-display">2025年7月1日</div>
+            <div id="timeline-container">
+                <input type="range" id="timeline" min="0" max="914" value="0" step="0.5">
+                <div id="month-labels">
+                    <span class="month-label" data-day="0">2025/7月</span>
+                    <span class="month-label" data-day="122">2025/11月</span>
+                    <span class="month-label" data-day="184">2026/1月</span>
+                    <span class="month-label" data-day="365">2026/7月</span>
+                    <span class="month-label" data-day="549">2027/1月</span>
+                    <span class="month-label" data-day="730">2027/7月</span>
+                    <span class="month-label" data-day="914">2028/1月</span>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="play-pause">▶ 播放</button>
+                <button id="reset">⟲ 重置</button>
+                <button id="toggle-orbits">顯示軌道</button>
+                <button id="toggle-labels">顯示標籤</button>
+                <button id="follow-atlas">追蹤 3I/ATLAS</button>
+                <button id="toggle-rotation">行星自轉</button>
+            </div>
+            <div id="speed-control">
+                <label>動畫速度:</label>
+                <input type="range" id="speed-slider" min="0.1" max="10" value="1" step="0.1">
+                <span id="speed-value">1.0x</span>
+            </div>
+        </div>
+        
+        <div id="distance-display" style="display: none;">
+            <h3>3I/ATLAS 距離</h3>
+            <div id="distance-list"></div>
+        </div>
+        
+        <div id="zoom-controls">
+            <button class="zoom-btn" id="zoom-in">+</button>
+            <div id="zoom-level">100%</div>
+            <button class="zoom-btn" id="zoom-out">−</button>
+            <button class="zoom-btn" id="zoom-reset">⟲</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // 初始化Three.js場景
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // 設置相機位置
+        camera.position.set(50, 30, 50);
+        camera.lookAt(0, 0, 0);
+
+        // 添加環境光和點光源
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+        scene.add(ambientLight);
+        
+        const sunLight = new THREE.PointLight(0xFFFFFF, 3, 1000);
+        sunLight.position.set(0, 0, 0);
+        sunLight.castShadow = true;
+        scene.add(sunLight);
+        
+        // 添加額外的定向光以增強可見度
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(10, 10, 10);
+        scene.add(directionalLight);
+
+        // 添加星空背景
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({ 
+            color: 0xFFFFFF, 
+            size: 0.7,
+            sizeAttenuation: false
+        });
+        
+        const starsVertices = [];
+        for (let i = 0; i < 15000; i++) {
+            const x = (Math.random() - 0.5) * 2000;
+            const y = (Math.random() - 0.5) * 2000;
+            const z = (Math.random() - 0.5) * 2000;
+            starsVertices.push(x, y, z);
+        }
+        
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // 創建程序化紋理的函數
+        function createPlanetTexture(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            switch(type) {
+                case 'sun':
+                    // 太陽紋理
+                    const sunGradient = ctx.createRadialGradient(256, 128, 0, 256, 128, 128);
+                    sunGradient.addColorStop(0, '#FFFFFF');
+                    sunGradient.addColorStop(0.3, '#FFD700');
+                    sunGradient.addColorStop(0.7, '#FFA000');
+                    sunGradient.addColorStop(1, '#FF6000');
+                    ctx.fillStyle = sunGradient;
+                    ctx.fillRect(0, 0, 512, 256);
+                    
+                    // 添加太陽黑子
+                    for(let i = 0; i < 20; i++) {
+                        ctx.fillStyle = `rgba(100, 50, 0, ${Math.random() * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 10 + 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    break;
+                    
+                case 'mercury':
+                    // 水星紋理
+                    ctx.fillStyle = '#8C7853';
+                    ctx.fillRect(0, 0, 512, 256);
+                    for(let i = 0; i < 100; i++) {
+                        ctx.fillStyle = `rgba(70, 60, 50, ${Math.random() * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 8 + 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    break;
+                    
+                case 'venus':
+                    // 金星紋理
+                    ctx.fillStyle = '#FDB813';
+                    ctx.fillRect(0, 0, 512, 256);
+                    // 添加雲層紋理
+                    for(let i = 0; i < 50; i++) {
+                        ctx.strokeStyle = `rgba(255, 220, 150, ${Math.random() * 0.3})`;
+                        ctx.lineWidth = Math.random() * 3 + 1;
+                        ctx.beginPath();
+                        ctx.moveTo(0, Math.random() * 256);
+                        ctx.bezierCurveTo(170, Math.random() * 256, 340, Math.random() * 256, 512, Math.random() * 256);
+                        ctx.stroke();
+                    }
+                    break;
+                    
+                case 'earth':
+                    // 地球紋理
+                    // 海洋
+                    ctx.fillStyle = '#004080';
+                    ctx.fillRect(0, 0, 512, 256);
+                    // 大陸
+                    ctx.fillStyle = '#228B22';
+                    // 簡化的大陸形狀
+                    ctx.fillRect(100, 80, 80, 60);
+                    ctx.fillRect(300, 90, 100, 80);
+                    ctx.fillRect(180, 140, 60, 40);
+                    // 雲層
+                    for(let i = 0; i < 30; i++) {
+                        ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.3})`;
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 20 + 10, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    break;
+                    
+                case 'mars':
+                    // 火星紋理
+                    ctx.fillStyle = '#CD5C5C';
+                    ctx.fillRect(0, 0, 512, 256);
+                    // 添加火星表面特徵
+                    for(let i = 0; i < 80; i++) {
+                        ctx.fillStyle = `rgba(139, 69, 19, ${Math.random() * 0.4})`;
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 10 + 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    // 極冠
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.fillRect(0, 0, 512, 20);
+                    ctx.fillRect(0, 236, 512, 20);
+                    break;
+                    
+                case 'jupiter':
+                    // 木星紋理與大紅斑
+                    const jupiterGradient = ctx.createLinearGradient(0, 0, 0, 256);
+                    jupiterGradient.addColorStop(0, '#D4A76A');
+                    jupiterGradient.addColorStop(0.2, '#C19860');
+                    jupiterGradient.addColorStop(0.4, '#FFE5B4');
+                    jupiterGradient.addColorStop(0.5, '#D4A76A');
+                    jupiterGradient.addColorStop(0.6, '#8B7355');
+                    jupiterGradient.addColorStop(0.8, '#FFE5B4');
+                    jupiterGradient.addColorStop(1, '#C19860');
+                    ctx.fillStyle = jupiterGradient;
+                    ctx.fillRect(0, 0, 512, 256);
+                    
+                    // 添加條紋
+                    for(let i = 0; i < 256; i += 20) {
+                        ctx.strokeStyle = `rgba(139, 69, 19, ${Math.random() * 0.3})`;
+                        ctx.lineWidth = Math.random() * 5 + 2;
+                        ctx.beginPath();
+                        ctx.moveTo(0, i);
+                        ctx.lineTo(512, i);
+                        ctx.stroke();
+                    }
+                    
+                    // 大紅斑
+                    ctx.fillStyle = '#CC5500';
+                    ctx.beginPath();
+                    ctx.ellipse(350, 150, 40, 25, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+                    
+                case 'saturn':
+                    // 土星紋理
+                    const saturnGradient = ctx.createLinearGradient(0, 0, 0, 256);
+                    saturnGradient.addColorStop(0, '#FAD5A5');
+                    saturnGradient.addColorStop(0.3, '#E5C494');
+                    saturnGradient.addColorStop(0.5, '#D4A76A');
+                    saturnGradient.addColorStop(0.7, '#E5C494');
+                    saturnGradient.addColorStop(1, '#FAD5A5');
+                    ctx.fillStyle = saturnGradient;
+                    ctx.fillRect(0, 0, 512, 256);
+                    
+                    // 添加條紋
+                    for(let i = 0; i < 256; i += 15) {
+                        ctx.strokeStyle = `rgba(196, 164, 132, ${Math.random() * 0.3})`;
+                        ctx.lineWidth = Math.random() * 3 + 1;
+                        ctx.beginPath();
+                        ctx.moveTo(0, i);
+                        ctx.lineTo(512, i);
+                        ctx.stroke();
+                    }
+                    break;
+                    
+                case 'uranus':
+                    // 天王星紋理
+                    ctx.fillStyle = '#4FD0E0';
+                    ctx.fillRect(0, 0, 512, 256);
+                    // 添加淡淡的條紋
+                    for(let i = 0; i < 10; i++) {
+                        ctx.strokeStyle = `rgba(79, 208, 224, ${Math.random() * 0.2})`;
+                        ctx.lineWidth = Math.random() * 10 + 5;
+                        ctx.beginPath();
+                        ctx.moveTo(0, Math.random() * 256);
+                        ctx.lineTo(512, Math.random() * 256);
+                        ctx.stroke();
+                    }
+                    break;
+                    
+                case 'neptune':
+                    // 海王星紋理
+                    ctx.fillStyle = '#4169FF';
+                    ctx.fillRect(0, 0, 512, 256);
+                    // 添加暴風雲
+                    for(let i = 0; i < 20; i++) {
+                        ctx.fillStyle = `rgba(30, 60, 180, ${Math.random() * 0.4})`;
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 15 + 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    // 大暗斑
+                    ctx.fillStyle = 'rgba(0, 0, 80, 0.5)';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 128, 30, 20, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+                    
+                case 'moon':
+                    // 月球紋理
+                    ctx.fillStyle = '#C0C0C0';
+                    ctx.fillRect(0, 0, 512, 256);
+                    // 添加環形山
+                    for(let i = 0; i < 50; i++) {
+                        ctx.strokeStyle = `rgba(128, 128, 128, ${Math.random() * 0.5})`;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 10 + 3, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    break;
+            }
+            
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // 行星數據
+        const planets = [
+            { name: '太陽', radius: 3, distance: 0, color: 0xFFD700, period: 0, rotationPeriod: 25, type: 'sun' },
+            { name: '水星', radius: 0.4, distance: 5, color: 0x8C7853, period: 88, rotationPeriod: 59, type: 'mercury' },
+            { name: '金星', radius: 0.7, distance: 8, color: 0xFDB813, period: 225, rotationPeriod: -243, type: 'venus' },
+            { name: '地球', radius: 0.7, distance: 11, color: 0x4169E1, period: 365, rotationPeriod: 1, type: 'earth', hasMoon: true },
+            { name: '火星', radius: 0.5, distance: 15, color: 0xCD5C5C, period: 687, rotationPeriod: 1.03, type: 'mars' },
+            { name: '木星', radius: 2, distance: 30, color: 0xDAA520, period: 4333, rotationPeriod: 0.41, type: 'jupiter' },
+            { name: '土星', radius: 1.7, distance: 45, color: 0xF4A460, period: 10759, rotationPeriod: 0.45, hasRings: true, type: 'saturn' },
+            { name: '天王星', radius: 1.2, distance: 60, color: 0x4FD0E0, period: 30687, rotationPeriod: -0.72, tilt: 98, type: 'uranus' },
+            { name: '海王星', radius: 1.2, distance: 75, color: 0x4169FF, period: 60190, rotationPeriod: 0.67, type: 'neptune' }
+        ];
+
+        // 創建文字標籤
+        function createTextSprite(text, color = 'white') {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+            
+            context.font = 'Bold 24px Arial';
+            context.fillStyle = color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            
+            // 添加文字陰影
+            context.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            context.shadowBlur = 4;
+            context.shadowOffsetX = 2;
+            context.shadowOffsetY = 2;
+            
+            context.fillText(text, 128, 32);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ 
+                map: texture,
+                transparent: true
+            });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(5, 1.25, 1);
+            
+            return sprite;
+        }
+
+        // 創建行星物件
+        const planetObjects = [];
+        const orbitLines = [];
+        const planetLabelsSprites = [];
+        let moonObject = null;
+
+        planets.forEach((planet, index) => {
+            const geometry = new THREE.SphereGeometry(planet.radius, 32, 32);
+            const texture = createPlanetTexture(planet.type);
+            const material = new THREE.MeshPhongMaterial({ 
+                map: texture,
+                emissive: planet.color,
+                emissiveIntensity: planet.name === '太陽' ? 0.8 : 0.3,
+                shininess: planet.name === '太陽' ? 0 : 50
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
+            // 設置行星傾斜角度
+            if (planet.tilt) {
+                mesh.rotation.z = planet.tilt * Math.PI / 180;
+            }
+            
+            // 為每個行星添加發光效果（除了太陽）
+            if (planet.name !== '太陽') {
+                const glowGeometry = new THREE.SphereGeometry(planet.radius * 1.2, 32, 32);
+                const glowMaterial = new THREE.MeshBasicMaterial({
+                    color: planet.color,
+                    transparent: true,
+                    opacity: 0.15
+                });
+                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+                mesh.add(glow);
+                
+                // 添加光環效果
+                const ringGeometry = new THREE.RingGeometry(planet.radius * 1.3, planet.radius * 1.5, 32);
+                const ringMaterial = new THREE.MeshBasicMaterial({
+                    color: planet.color,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.2
+                });
+                const ringGlow = new THREE.Mesh(ringGeometry, ringMaterial);
+                ringGlow.rotation.x = Math.PI / 2;
+                mesh.add(ringGlow);
+            }
+            
+            if (planet.name === '太陽') {
+                // 為太陽添加多層光暈效果
+                const glowGeometry1 = new THREE.SphereGeometry(planet.radius * 1.5, 32, 32);
+                const glowMaterial1 = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.4
+                });
+                const glow1 = new THREE.Mesh(glowGeometry1, glowMaterial1);
+                mesh.add(glow1);
+                
+                const glowGeometry2 = new THREE.SphereGeometry(planet.radius * 2, 32, 32);
+                const glowMaterial2 = new THREE.MeshBasicMaterial({
+                    color: 0xFFA500,
+                    transparent: true,
+                    opacity: 0.2
+                });
+                const glow2 = new THREE.Mesh(glowGeometry2, glowMaterial2);
+                mesh.add(glow2);
+                
+                // 添加日冕
+                const coronaGeometry = new THREE.SphereGeometry(planet.radius * 2.5, 32, 32);
+                const coronaMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFFFFF,
+                    transparent: true,
+                    opacity: 0.1
+                });
+                const corona = new THREE.Mesh(coronaGeometry, coronaMaterial);
+                mesh.add(corona);
+            }
+            
+            // 添加土星環
+            if (planet.hasRings) {
+                const ringGeometry = new THREE.RingGeometry(planet.radius * 1.5, planet.radius * 2.5, 64);
+                const ringMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xF4A460,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = Math.PI / 2;
+                mesh.add(ring);
+                
+                // 添加內環
+                const innerRingGeometry = new THREE.RingGeometry(planet.radius * 1.3, planet.radius * 1.4, 64);
+                const innerRingMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x8B7355,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const innerRing = new THREE.Mesh(innerRingGeometry, innerRingMaterial);
+                innerRing.rotation.x = Math.PI / 2;
+                mesh.add(innerRing);
+            }
+            
+            scene.add(mesh);
+            
+            // 添加月球
+            if (planet.hasMoon) {
+                const moonGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+                const moonTexture = createPlanetTexture('moon');
+                const moonMaterial = new THREE.MeshPhongMaterial({ 
+                    map: moonTexture,
+                    shininess: 5
+                });
+                const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+                moon.castShadow = true;
+                moon.receiveShadow = true;
+                scene.add(moon);
+                
+                const moonLabel = createTextSprite('月球', '#C0C0C0');
+                moonLabel.position.y = 0.5;
+                moon.add(moonLabel);
+                planetLabelsSprites.push(moonLabel);
+                
+                moonObject = {
+                    mesh: moon,
+                    parent: mesh,
+                    distance: 1.5,
+                    period: 27.3
+                };
+            }
+            
+            // 添加標籤
+            const label = createTextSprite(planet.name);
+            label.position.y = planet.radius + 2;
+            mesh.add(label);
+            planetLabelsSprites.push(label);
+            
+            planetObjects.push({
+                mesh: mesh,
+                data: planet,
+                angle: Math.random() * Math.PI * 2
+            });
+
+            // 創建軌道線
+            if (planet.distance > 0) {
+                const orbitGeometry = new THREE.BufferGeometry();
+                const orbitMaterial = new THREE.LineBasicMaterial({ 
+                    color: planet.color, 
+                    opacity: 0.3,
+                    transparent: true 
+                });
+                
+                const orbitPoints = [];
+                for (let i = 0; i <= 100; i++) {
+                    const angle = (i / 100) * Math.PI * 2;
+                    orbitPoints.push(new THREE.Vector3(
+                        Math.cos(angle) * planet.distance,
+                        0,
+                        Math.sin(angle) * planet.distance
+                    ));
+                }
+                
+                orbitGeometry.setFromPoints(orbitPoints);
+                const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
+                orbitLine.visible = false;
+                scene.add(orbitLine);
+                orbitLines.push(orbitLine);
+            }
+        });
+
+        // 創建3I/ATLAS（多邊形狀、亮紅色）
+        const atlasGeometry = new THREE.IcosahedronGeometry(1.2, 0); // 使用二十面體
+        const atlasMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xFF0000, // 亮紅色
+            emissive: 0xFF0000,
+            emissiveIntensity: 0.3,
+            shininess: 100
+        });
+        const atlasMesh = new THREE.Mesh(atlasGeometry, atlasMaterial);
+        scene.add(atlasMesh);
+        
+        // 添加簡單的紅色光暈
+        const atlasGlow1 = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(1.5, 0),
+            new THREE.MeshBasicMaterial({
+                color: 0xFF0000,
+                transparent: true,
+                opacity: 0.2,
+                wireframe: true // 線框模式
+            })
+        );
+        atlasMesh.add(atlasGlow1);
+        
+        // 添加第二層多邊形光暈
+        const atlasGlow2 = new THREE.Mesh(
+            new THREE.OctahedronGeometry(1.8, 0), // 八面體
+            new THREE.MeshBasicMaterial({
+                color: 0xFF6666,
+                transparent: true,
+                opacity: 0.1
+            })
+        );
+        atlasMesh.add(atlasGlow2);
+        
+        // 添加點光源在3I/ATLAS位置
+        const atlasLight = new THREE.PointLight(0xFF0000, 2, 30);
+        atlasMesh.add(atlasLight);
+        
+        // 創建3I/ATLAS的完整軌道線
+        const atlasOrbitPoints = [];
+        // 計算更長的時間範圍來顯示完整的雙曲線（延長到2028年1月1日）
+        for (let i = -100; i <= 1014; i += 5) {
+            const pos = calculateAtlasPosition(i);
+            // 限制軌道顯示範圍，避免無限延伸
+            if (Math.abs(pos.x) < 300 && Math.abs(pos.z) < 300) {
+                atlasOrbitPoints.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+            }
+        }
+        
+        // 創建軌道線
+        const atlasOrbitGeometry = new THREE.BufferGeometry().setFromPoints(atlasOrbitPoints);
+        const atlasOrbitMaterial = new THREE.LineBasicMaterial({
+            color: 0xFF0000, // 紅色軌道
+            opacity: 0.4,
+            transparent: true,
+            linewidth: 2
+        });
+        const atlasOrbitLine = new THREE.Line(atlasOrbitGeometry, atlasOrbitMaterial);
+        atlasOrbitLine.visible = true; // 預設顯示
+        scene.add(atlasOrbitLine);
+        
+        // 創建發光的軌道線
+        const atlasOrbitGlowMaterial = new THREE.LineBasicMaterial({
+            color: 0xFF6666,
+            opacity: 0.2,
+            transparent: true,
+            linewidth: 3
+        });
+        const atlasOrbitGlow = new THREE.Line(atlasOrbitGeometry, atlasOrbitGlowMaterial);
+        atlasOrbitGlow.visible = true;
+        scene.add(atlasOrbitGlow);
+
+        // 為3I/ATLAS添加標籤
+        const atlasLabel = createTextSprite('3I/ATLAS', '#FF00FF');
+        atlasLabel.position.y = 2;
+        atlasMesh.add(atlasLabel);
+        planetLabelsSprites.push(atlasLabel);
+
+        // 3I/ATLAS軌跡線（更明顯）
+        const atlasTrailGeometry = new THREE.BufferGeometry();
+        const atlasTrailMaterial = new THREE.LineBasicMaterial({ 
+            color: 0xFF00FF,
+            linewidth: 3,
+            opacity: 0.8,
+            transparent: true
+        });
+        let atlasTrailPoints = [];
+        const atlasTrail = new THREE.Line(atlasTrailGeometry, atlasTrailMaterial);
+        scene.add(atlasTrail);
+        
+        // 添加發光軌跡
+        const atlasTrailGlow = new THREE.Line(
+            atlasTrailGeometry,
+            new THREE.LineBasicMaterial({ 
+                color: 0xFFAAFF,
+                linewidth: 5,
+                opacity: 0.3,
+                transparent: true
+            })
+        );
+        scene.add(atlasTrailGlow);
+
+        // 控制變數
+        let isPlaying = false;
+        let currentDay = 0;
+        let animationSpeed = 1;
+        let showOrbits = false;
+        let showLabels = true;
+        let followAtlas = false;
+        let enableRotation = true;
+        let zoomLevel = 1;
+        let baseDistance = 70;
+        let cameraDistance = baseDistance;
+        let cameraRotation = { theta: 0.785, phi: 0.785 }; // 初始相機角度
+
+        // 計算兩個3D點之間的距離
+        function calculateDistance(pos1, pos2) {
+            const dx = pos1.x - pos2.x;
+            const dy = pos1.y - pos2.y;
+            const dz = pos1.z - pos2.z;
+            return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+
+        // 更新距離顯示
+        function updateDistanceDisplay(atlasPos) {
+            const distanceList = document.getElementById('distance-list');
+            distanceList.innerHTML = '';
+            
+            let hasCloseApproach = false;
+            
+            planetObjects.forEach(planetObj => {
+                if (planetObj.data.name !== '太陽') {
+                    const distance = calculateDistance(atlasPos, planetObj.mesh.position);
+                    const auDistance = distance / 11; // 轉換回AU（地球距離是11單位）
+                    
+                    const distanceItem = document.createElement('div');
+                    distanceItem.className = 'distance-item';
+                    
+                    if (auDistance < 0.5) {
+                        distanceItem.className += ' very-close';
+                        hasCloseApproach = true;
+                    } else if (auDistance < 2) {
+                        distanceItem.className += ' close';
+                        hasCloseApproach = true;
+                    }
+                    
+                    distanceItem.innerHTML = `
+                        <span>${planetObj.data.name}:</span>
+                        <span>${auDistance.toFixed(2)} AU</span>
+                    `;
+                    distanceList.appendChild(distanceItem);
+                }
+            });
+            
+            // 顯示或隱藏距離面板
+            const distanceDisplay = document.getElementById('distance-display');
+            distanceDisplay.style.display = hasCloseApproach ? 'block' : 'none';
+        }
+
+        // 更新相機位置
+        function updateCameraPosition() {
+            if (followAtlas) {
+                // 追蹤模式下，相機跟隨3I/ATLAS但保持可調整的距離和角度
+                const offset = new THREE.Vector3(
+                    Math.sin(cameraRotation.theta) * Math.cos(cameraRotation.phi),
+                    Math.sin(cameraRotation.phi),
+                    Math.cos(cameraRotation.theta) * Math.cos(cameraRotation.phi)
+                );
+                offset.multiplyScalar(30); // 固定追蹤距離，適合看到大型3I/ATLAS
+                camera.position.copy(atlasMesh.position).add(offset);
+                camera.lookAt(atlasMesh.position);
+            } else {
+                // 一般模式，相機圍繞原點
+                const spherical = new THREE.Spherical(
+                    cameraDistance,
+                    cameraRotation.phi,
+                    cameraRotation.theta
+                );
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+            }
+        }
+
+        // 更新縮放級別顯示
+        function updateZoomDisplay() {
+            const zoomPercent = Math.round(zoomLevel * 100);
+            document.getElementById('zoom-level').textContent = zoomPercent + '%';
+        }
+
+        // 修正後的3I/ATLAS位置計算（真實的雙曲線軌道）
+        function calculateAtlasPosition(day) {
+            // 近日點參數
+            const perihelionDay = 120; // 2025年10月29日（從7月1日算起第120天）
+            const perihelionDistance = 11 * 1.36; // 1.36 AU轉換到場景單位
+            const eccentricity = 6.141; // 離心率
+            
+            // 計算時間參數
+            const daysFromPerihelion = day - perihelionDay;
+            const meanMotion = 0.05; // 調整後的平均運動速率
+            const meanAnomaly = meanMotion * daysFromPerihelion;
+            
+            // 求解雙曲線異常
+            let H = meanAnomaly;
+            if (Math.abs(meanAnomaly) < 10) {
+                // 牛頓迭代法求解 M = e*sinh(H) - H
+                for(let i = 0; i < 5; i++) {
+                    const sinhH = Math.sinh(H);
+                    const coshH = Math.cosh(H);
+                    const f = eccentricity * sinhH - H - meanAnomaly;
+                    const df = eccentricity * coshH - 1;
+                    H = H - f / df;
+                }
+            } else {
+                // 遠離時使用近似
+                H = Math.sign(meanAnomaly) * Math.log(2 * Math.abs(meanAnomaly) / eccentricity);
+            }
+            
+            // 計算真近點角
+            const sinhH = Math.sinh(H);
+            const coshH = Math.cosh(H);
+            
+            // 雙曲線軌道半長軸（負值）
+            const a = -perihelionDistance / (eccentricity - 1);
+            
+            // 計算距離
+            const r = Math.abs(a) * (eccentricity * coshH - 1);
+            
+            // 計算真近點角
+            const sinNu = Math.sqrt(eccentricity * eccentricity - 1) * sinhH / (eccentricity * coshH - 1);
+            const cosNu = (eccentricity - coshH) / (eccentricity * coshH - 1);
+            const nu = Math.atan2(sinNu, cosNu);
+            
+            // 軌道平面上的位置（考慮近日點幅角）
+            const omega = Math.PI * 0.3; // 近日點幅角
+            const theta = nu + omega;
+            
+            // 計算3D位置（考慮軌道傾角）
+            const inclination = Math.PI * 0.97; // 175度傾角（逆行）
+            const ascendingNode = Math.PI * 0.2; // 升交點經度
+            
+            // 軌道平面座標
+            const x_orbital = r * Math.cos(theta);
+            const y_orbital = r * Math.sin(theta);
+            
+            // 轉換到黃道座標系
+            const x = x_orbital * Math.cos(ascendingNode) - y_orbital * Math.cos(inclination) * Math.sin(ascendingNode);
+            const z = x_orbital * Math.sin(ascendingNode) + y_orbital * Math.cos(inclination) * Math.cos(ascendingNode);
+            const y = y_orbital * Math.sin(inclination) * 0.3; // 垂直分量
+            
+            // 計算速度
+            const v_r = Math.sqrt(Math.abs(2 / r - 1 / Math.abs(a))) * 30;
+            const velocity = v_r + 20;
+            
+            return { 
+                x: x, 
+                y: y, 
+                z: z, 
+                distance: r / 11, // 轉換回AU
+                velocity: Math.min(velocity, 100)
+            };
+        }
+
+        // 更新行星位置
+        function updatePlanets(day) {
+            planetObjects.forEach((planetObj, index) => {
+                if (planetObj.data.period > 0) {
+                    const angle = (day / planetObj.data.period) * Math.PI * 2 + planetObj.angle;
+                    planetObj.mesh.position.x = Math.cos(angle) * planetObj.data.distance;
+                    planetObj.mesh.position.z = Math.sin(angle) * planetObj.data.distance;
+                    
+                    // 行星自轉
+                    if (enableRotation && planetObj.data.rotationPeriod) {
+                        planetObj.mesh.rotation.y += (1 / planetObj.data.rotationPeriod) * 0.01 * animationSpeed;
+                    }
+                }
+            });
+            
+            // 更新月球位置
+            if (moonObject) {
+                const earthObj = planetObjects.find(p => p.data.name === '地球');
+                if (earthObj) {
+                    const moonAngle = (day / moonObject.period) * Math.PI * 2;
+                    moonObject.mesh.position.x = earthObj.mesh.position.x + Math.cos(moonAngle) * moonObject.distance;
+                    moonObject.mesh.position.z = earthObj.mesh.position.z + Math.sin(moonAngle) * moonObject.distance;
+                    moonObject.mesh.position.y = 0;
+                }
+            }
+        }
+
+        // 更新3I/ATLAS位置
+        function updateAtlas(day) {
+            const pos = calculateAtlasPosition(day);
+            atlasMesh.position.set(pos.x, pos.y, pos.z);
+            
+            // 添加到軌跡
+            if (atlasTrailPoints.length < 500) {
+                atlasTrailPoints.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+            } else {
+                atlasTrailPoints.shift();
+                atlasTrailPoints.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+            }
+            
+            atlasTrailGeometry.setFromPoints(atlasTrailPoints);
+            atlasTrailGlow.geometry.setFromPoints(atlasTrailPoints);
+            
+            // 更新信息面板
+            document.getElementById('current-distance').textContent = pos.distance.toFixed(2) + ' AU';
+            document.getElementById('current-velocity').textContent = pos.velocity.toFixed(1) + ' km/s';
+            
+            // 更新距離顯示
+            updateDistanceDisplay(atlasMesh.position);
+            
+            return pos;
+        }
+
+        // 更新時間顯示
+        function updateTimeDisplay(day) {
+            const startDate = new Date('2025-07-01'); // 改為7月1日正式發現日期
+            const currentDate = new Date(startDate);
+            currentDate.setDate(currentDate.getDate() + Math.floor(day));
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1;
+            const date = currentDate.getDate();
+            
+            document.getElementById('time-display').textContent = 
+                `${year}年${month}月${date}日`;
+        }
+
+        // 鼠標控制
+        let mouseX = 0, mouseY = 0;
+        let isDragging = false;
+        let previousMouseX = 0, previousMouseY = 0;
+
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'canvas') {
+                isDragging = true;
+                previousMouseX = e.clientX;
+                previousMouseY = e.clientY;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.clientX - previousMouseX;
+                const deltaY = e.clientY - previousMouseY;
+                
+                // 更新相機旋轉角度
+                cameraRotation.theta -= deltaX * 0.01;
+                cameraRotation.phi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraRotation.phi - deltaY * 0.01));
+                
+                updateCameraPosition();
+                
+                previousMouseX = e.clientX;
+                previousMouseY = e.clientY;
+            }
+        });
+
+        // 滑鼠滾輪縮放
+        document.addEventListener('wheel', (e) => {
+            if (e.target.id === 'canvas' || e.target.closest('#canvas-container')) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 1.1 : 0.9;
+                zoomLevel *= delta;
+                zoomLevel = Math.max(0.1, Math.min(5, zoomLevel));
+                cameraDistance = baseDistance * zoomLevel;
+                updateCameraPosition();
+                updateZoomDisplay();
+            }
+        });
+
+        // 縮放控制按鈕
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            zoomLevel = Math.max(0.1, zoomLevel * 0.8);
+            cameraDistance = baseDistance * zoomLevel;
+            updateCameraPosition();
+            updateZoomDisplay();
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            zoomLevel = Math.min(5, zoomLevel * 1.2);
+            cameraDistance = baseDistance * zoomLevel;
+            updateCameraPosition();
+            updateZoomDisplay();
+        });
+
+        document.getElementById('zoom-reset').addEventListener('click', () => {
+            zoomLevel = 1;
+            cameraDistance = baseDistance;
+            cameraRotation = { theta: 0.785, phi: 0.785 };
+            updateCameraPosition();
+            updateZoomDisplay();
+        });
+
+        // 控制按鈕事件
+        document.getElementById('play-pause').addEventListener('click', function() {
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? '⏸ 暫停' : '▶ 播放';
+            this.classList.toggle('active');
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            currentDay = 0;
+            document.getElementById('timeline').value = 0;
+            updateTimeDisplay(0);
+            updatePlanets(0);
+            updateAtlas(0);
+            atlasTrailPoints = []; // 清空軌跡
+            atlasTrailGeometry.setFromPoints(atlasTrailPoints);
+            zoomLevel = 1;
+            cameraDistance = baseDistance;
+            cameraRotation = { theta: 0.785, phi: 0.785 };
+            updateCameraPosition();
+            updateZoomDisplay();
+            isPlaying = false;
+            followAtlas = false;
+            document.getElementById('play-pause').textContent = '▶ 播放';
+            document.getElementById('play-pause').classList.remove('active');
+            document.getElementById('follow-atlas').textContent = '追蹤 3I/ATLAS';
+            document.getElementById('follow-atlas').classList.remove('active');
+        });
+
+        document.getElementById('toggle-orbits').addEventListener('click', function() {
+            showOrbits = !showOrbits;
+            orbitLines.forEach(line => line.visible = showOrbits);
+            // 同時控制3I/ATLAS軌道線
+            if (atlasOrbitLine) {
+                atlasOrbitLine.visible = !atlasOrbitLine.visible;
+                atlasOrbitGlow.visible = atlasOrbitLine.visible;
+            }
+            this.classList.toggle('active');
+            this.textContent = showOrbits ? '隱藏軌道' : '顯示軌道';
+        });
+
+        document.getElementById('toggle-labels').addEventListener('click', function() {
+            showLabels = !showLabels;
+            planetLabelsSprites.forEach(label => {
+                label.visible = showLabels;
+            });
+            this.classList.toggle('active');
+            this.textContent = showLabels ? '隱藏標籤' : '顯示標籤';
+        });
+
+        document.getElementById('follow-atlas').addEventListener('click', function() {
+            followAtlas = !followAtlas;
+            this.classList.toggle('active');
+            this.textContent = followAtlas ? '停止追蹤' : '追蹤 3I/ATLAS';
+            
+            // 立即更新相機位置
+            updateCameraPosition();
+        });
+
+        document.getElementById('toggle-rotation').addEventListener('click', function() {
+            enableRotation = !enableRotation;
+            this.classList.toggle('active');
+            this.textContent = enableRotation ? '停止自轉' : '行星自轉';
+        });
+
+        document.getElementById('timeline').addEventListener('input', (e) => {
+            currentDay = parseFloat(e.target.value);
+            updateTimeDisplay(currentDay);
+            updatePlanets(currentDay);
+            updateAtlas(currentDay);
+        });
+
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
+            animationSpeed = parseFloat(e.target.value);
+            document.getElementById('speed-value').textContent = animationSpeed.toFixed(1) + 'x';
+        });
+
+        // 月份標籤點擊事件
+        document.querySelectorAll('.month-label').forEach(label => {
+            label.addEventListener('click', (e) => {
+                const day = parseFloat(e.target.dataset.day);
+                currentDay = day;
+                document.getElementById('timeline').value = day;
+                updateTimeDisplay(day);
+                updatePlanets(day);
+                updateAtlas(day);
+            });
+        });
+
+        // 動畫循環
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = Date.now() * 0.001;
+            
+            if (isPlaying) {
+                currentDay += animationSpeed * 0.5; // 調整速度
+                if (currentDay > 914) { // 從2025/7/1 到 2028/1/1 = 914天
+                    currentDay = 0;
+                    // 重置軌跡當循環重新開始
+                    atlasTrailPoints = [];
+                }
+                
+                document.getElementById('timeline').value = currentDay;
+                updateTimeDisplay(currentDay);
+                updatePlanets(currentDay);
+                const atlasPos = updateAtlas(currentDay);
+            } else {
+                // 即使暫停也要更新距離顯示
+                if (atlasMesh.position.length() > 0) {
+                    updateDistanceDisplay(atlasMesh.position);
+                }
+            }
+            
+            // 更新相機位置
+            updateCameraPosition();
+            
+            // 讓標籤始終面向相機
+            planetLabelsSprites.forEach(sprite => {
+                if (sprite.visible) {
+                    sprite.lookAt(camera.position);
+                }
+            });
+            
+            // 3I/ATLAS旋轉效果（多邊形自轉）
+            atlasMesh.rotation.x += 0.01;
+            atlasMesh.rotation.y += 0.015;
+            atlasMesh.rotation.z += 0.005;
+            
+            // 光暈緩慢旋轉
+            if (atlasGlow1) {
+                atlasGlow1.rotation.x -= 0.005;
+                atlasGlow1.rotation.y -= 0.01;
+            }
+            
+            if (atlasGlow2) {
+                atlasGlow2.rotation.x += 0.003;
+                atlasGlow2.rotation.z += 0.007;
+            }
+            
+            // 旋轉星空背景
+            stars.rotation.y += 0.0001;
+            
+            renderer.render(scene, camera);
+        }
+
+        // 初始化
+        updateCameraPosition();
+        updateZoomDisplay();
+
+        // 隱藏載入訊息
+        document.getElementById('loading').style.display = 'none';
+
+        // 開始動畫
+        animate();
+
+        // 視窗調整大小處理
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
