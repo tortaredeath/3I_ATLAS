@@ -1177,9 +1177,14 @@
             const z = x_orbital * Math.sin(ascendingNode) + y_orbital * Math.cos(inclination) * Math.cos(ascendingNode);
             const y = y_orbital * Math.sin(inclination) * 0.3; // 垂直分量
             
-            // 計算速度
-            const v_r = Math.sqrt(Math.abs(2 / r - 1 / Math.abs(a))) * 30;
-            const velocity = v_r + 20;
+            // 計算速度（使用 vis-viva 方程式）
+            // v² = GM(2/r - 1/a)，其中 a < 0 對於雙曲線軌道
+            // 因此實際上是 v² = 2GM/r + GM/|a| = 2GM/r + v_infinity²
+            // 在近日點速度最大，遠離時趨近於 v_infinity = 60 km/s
+            const v_infinity = 60; // km/s
+            const v_squared = 2 / r - 1 / a; // a 是負值，所以 -1/a = 1/|a|
+            const v_r = v_squared > 0 ? Math.sqrt(v_squared) * 30 : v_infinity;
+            const velocity = Math.max(v_r, v_infinity); // 最小值為雙曲線超額速度
             
             return { 
                 x: x, 
