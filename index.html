@@ -348,19 +348,19 @@
             <h1>3I/ATLAS 星際天體</h1>
             <div class="info-item">
                 <span class="info-label">離心率:</span>
-                <span class="info-value">6.141±0.002</span>
+                <span class="info-value">6.143±0.0006</span>
             </div>
             <div class="info-item">
                 <span class="info-label">雙曲線超額速度:</span>
-                <span class="info-value">58 km/s</span>
+                <span class="info-value">60 km/s</span>
             </div>
             <div class="info-item">
                 <span class="info-label">軌道傾角:</span>
-                <span class="info-value">175°</span>
+                <span class="info-value">175.1°</span>
             </div>
             <div class="info-item">
                 <span class="info-label">近日點:</span>
-                <span class="info-value">1.36 AU</span>
+                <span class="info-value">1.357 AU</span>
             </div>
             <div class="info-item">
                 <span class="info-label">近日點時間:</span>
@@ -376,10 +376,10 @@
             </div>
             <div class="closest-approach">
                 <h3>最接近時刻：</h3>
-                <div class="approach-item">火星: 2025/10/2 (0.19 AU)</div>
+                <div class="approach-item">火星: 2025/10/3 (0.19 AU)</div>
                 <div class="approach-item">金星: 2025/11/3 (0.65 AU)</div>
                 <div class="approach-item">地球: 2025/12/19 (1.80 AU)</div>
-                <div class="approach-item">木星: 2026/3/16 (3.36 AU)</div>
+                <div class="approach-item">木星: 2026/3/16 (0.36 AU)</div>
             </div>
         </div>
 
@@ -1121,8 +1121,8 @@
         function calculateAtlasPosition(day) {
             // 近日點參數
             const perihelionDay = 120; // 2025年10月29日（從7月1日算起第120天）
-            const perihelionDistance = 11 * 1.36; // 1.36 AU轉換到場景單位
-            const eccentricity = 6.141; // 離心率
+            const perihelionDistance = 11 * 1.357; // 1.357 AU轉換到場景單位
+            const eccentricity = 6.143; // 離心率
             
             // 計算時間參數
             const daysFromPerihelion = day - perihelionDay;
@@ -1165,7 +1165,7 @@
             const theta = nu + omega;
             
             // 計算3D位置（考慮軌道傾角）
-            const inclination = Math.PI * 0.97; // 175度傾角（逆行）
+            const inclination = Math.PI * 0.9728; // 175.1度傾角（逆行）
             const ascendingNode = Math.PI * 0.2; // 升交點經度
             
             // 軌道平面座標
