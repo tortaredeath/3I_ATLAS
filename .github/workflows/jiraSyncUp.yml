@@ -33,7 +33,3 @@ jobs:
 
             *Original description:*
             ${{ github.event.issue.body }}
-
-      # 3.（可選）Log 出 Jira issue key
-      - name: Log created Jira issue
-        run: echo "Created Jira issue: ${{ steps.create.outputs.issue }}"
