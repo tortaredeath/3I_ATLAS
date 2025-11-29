@@ -1,17 +1,12 @@
-name: Set Project Progress for Jira-created issues
+name: Set Progress When Issue Created
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened]
 
 jobs:
   set-progress:
     runs-on: ubuntu-latest
-
-    # 只處理：1) 新建 issue；2) 被加上 from:jira 這個 label 的事件
-    if: >
-      github.event.action == 'opened' ||
-      (github.event.action == 'labeled' && github.event.label.name == 'from:jira')
 
     steps:
       - name: Show trigger info
@@ -20,87 +15,50 @@ jobs:
           echo "Issue number: ${{ github.event.issue.number }}"
           echo "Labels: ${{ toJson(github.event.issue.labels) }}"
 
-      - name: Set Project Progress to Todo for this issue
+      - name: Add issue to project and set Progress = Todo
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PROJECT_ID: "<填你的 ProjectV2 ID>"
-          PROGRESS_FIELD_ID: "<填 Progress 欄位 ID>"
-          PROGRESS_OPTION_TODO_ID: "<填 Progress=Todo 的 option ID>"
+          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}   # 你要在 secrets 建立這個 Token
+          ISSUE_ID: ${{ github.event.issue.node_id }}
         run: |
-          echo "Repo: $GITHUB_REPOSITORY"
-          OWNER="${GITHUB_REPOSITORY%/*}"
-          REPO="${GITHUB_REPOSITORY#*/}"
-          NUMBER="${{ github.event.issue.number }}"
-
-          echo "Owner=$OWNER Repo=$REPO Number=$NUMBER"
-
-          # 1. 先拿到 Issue 的 Node ID
-          ISSUE_ID=$(gh api graphql -f query='
-            query($owner:String!, $repo:String!, $number:Int!) {
-              repository(owner: $owner, name: $repo) {
-                issue(number: $number) {
-                  id
-                  title
-                }
-              }
-            }' \
-            -F owner="$OWNER" \
-            -F repo="$REPO" \
-            -F number="$NUMBER" \
-            --jq '.data.repository.issue.id')
-
           echo "Issue node id: $ISSUE_ID"
 
-          # 2. 找這個 issue 在指定 Project 裡的 item id
-          ITEM_ID=$(gh api graphql -f query='
-            query($projectId:ID!, $issueId:ID!) {
-              node(id: $projectId) {
-                ... on ProjectV2 {
-                  items(first: 50, filterBy: {contentId: $issueId}) {
-                    nodes {
-                      id
-                    }
-                  }
+          echo "📌 將 Issue 加入 Project…"
+
+          gh api graphql -f query='
+            mutation($project:ID!, $item:ID!) {
+              addProjectV2ItemById(input:{
+                projectId:$project
+                contentId:$item
+              }) {
+                item {
+                  id
                 }
               }
-            }' \
-            -F projectId="$PROJECT_ID" \
-            -F issueId="$ISSUE_ID" \
-            --jq '.data.node.items.nodes[0].id')
+            }
+          ' -f project=PVT_kwH0ADBtMs4BJYJc -f item="$ISSUE_ID"
 
-          echo "Project item id: $ITEM_ID"
+          echo "📌 設定 Progress = Todo…"
 
-          if [ -z "$ITEM_ID" ]; then
-            echo "No project item found for this issue in the given project. Exit."
-            exit 0
-          fi
-
-          # 3. 把 Progress 欄位改成 Todo（指定的 option）
           gh api graphql -f query='
-            mutation(
-              $projectId: ID!,
-              $itemId: ID!,
-              $fieldId: ID!,
-              $optionId: String!
-            ) {
-              updateProjectV2ItemFieldValue(
-                input: {
-                  projectId: $projectId
-                  itemId: $itemId
-                  fieldId: $fieldId
-                  value: {
-                    singleSelectOptionId: $optionId
-                  }
+            mutation($project:ID!, $item:ID!, $field:ID!, $option:String!) {
+              updateProjectV2ItemFieldValue(input:{
+                projectId: $project
+                itemId: $item
+                fieldId: $field
+                value: {
+                  singleSelectOptionId: $option
                 }
-              ) {
+              }) {
                 projectV2Item {
                   id
                 }
               }
-            }' \
-            -F projectId="$PROJECT_ID" \
-            -F itemId="$ITEM_ID" \
-            -F fieldId="$PROGRESS_FIELD_ID" \
-            -F optionId="$PROGRESS_OPTION_TODO_ID"
+            }
+          ' \
+          -f project=PVT_kwH0ADBtMs4BJYJc \
+          -f item="$ISSUE_ID" \
+          -f field=PVTSSF_LAHOADB tMs4BJYJczg5j9EA \
+          -f option=7434d06d
 
-          echo "Progress updated to Todo for this item."
+      - name: Done
+        run: echo "🚀 Progress 已自動設為 Todo！"
