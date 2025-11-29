@@ -18,7 +18,17 @@ jobs:
           echo "Issue number: ${{ github.event.issue.number }}"
           echo "Labels: ${{ toJson(github.event.issue.labels) }}"
 
-      # 先確認 GH_PROJECT_TOKEN 對這個 PROJECT_ID 看不看得到
+      - name: Debug – check viewer
+        run: |
+          echo "🔍 Checking which account this token belongs to..."
+          gh api graphql -f query='
+            query {
+              viewer {
+                login
+              }
+            }
+          '
+
       - name: Debug – check project node
         run: |
           echo "🔍 Checking project node..."
