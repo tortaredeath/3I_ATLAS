@@ -4,9 +4,18 @@ on:
   issues:
     types: [opened]
 
+permissions:
+  contents: read
+  issues: write
+  projects: write
+
 jobs:
   set-progress:
     runs-on: ubuntu-latest
+
+    # 這邊把 PAT 放進 GH_TOKEN，給 gh CLI 用
+    env:
+      GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
 
     steps:
       - name: Show trigger info
@@ -17,13 +26,11 @@ jobs:
 
       - name: Add issue to project and set Progress = Todo
         env:
-          GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}   # 你要在 secrets 建立這個 Token
           ISSUE_ID: ${{ github.event.issue.node_id }}
         run: |
           echo "Issue node id: $ISSUE_ID"
 
           echo "📌 將 Issue 加入 Project…"
-
           gh api graphql -f query='
             mutation($project:ID!, $item:ID!) {
               addProjectV2ItemById(input:{
@@ -38,7 +45,6 @@ jobs:
           ' -f project=PVT_kwH0ADBtMs4BJYJc -f item="$ISSUE_ID"
 
           echo "📌 設定 Progress = Todo…"
-
           gh api graphql -f query='
             mutation($project:ID!, $item:ID!, $field:ID!, $option:String!) {
               updateProjectV2ItemFieldValue(input:{
@@ -49,15 +55,13 @@ jobs:
                   singleSelectOptionId: $option
                 }
               }) {
-                projectV2Item {
-                  id
-                }
+                projectV2Item { id }
               }
             }
           ' \
           -f project=PVT_kwH0ADBtMs4BJYJc \
           -f item="$ISSUE_ID" \
-          -f field=PVTSSF_LAHOADB tMs4BJYJczg5j9EA \
+          -f field=PVTSSF_LAHOADBtMs4BJYJczg5j9EA \
           -f option=7434d06d
 
       - name: Done
