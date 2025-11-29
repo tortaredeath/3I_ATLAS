@@ -4,10 +4,13 @@ on:
   issues:
     types: [opened]
 
+# 這個 block 你可以：
+# 1) 完全刪掉，或
+# 2) 改成 repository-projects
 permissions:
   contents: read
   issues: write
-  projects: write
+  repository-projects: write   # ⬅️ 把原本的 projects: write 改成這行
 
 jobs:
   set-progress:
@@ -37,9 +40,7 @@ jobs:
                 projectId:$project
                 contentId:$item
               }) {
-                item {
-                  id
-                }
+                item { id }
               }
             }
           ' -f project=PVT_kwH0ADBtMs4BJYJc -f item="$ISSUE_ID"
@@ -51,9 +52,7 @@ jobs:
                 projectId: $project
                 itemId: $item
                 fieldId: $field
-                value: {
-                  singleSelectOptionId: $option
-                }
+                value: { singleSelectOptionId: $option }
               }) {
                 projectV2Item { id }
               }
