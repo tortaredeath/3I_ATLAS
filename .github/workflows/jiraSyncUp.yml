@@ -1,0 +1,39 @@
+name: Sync Issues to Jira (ROVO)
+
+on:
+  issues:
+    types: [opened]   # 只在新 issue 建立時觸發
+
+jobs:
+  sync-to-jira:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 先登入 Jira（用 gajira-login）
+      - name: Login to Jira
+        uses: atlassian/gajira-login@v3
+        env:
+          JIRA_BASE_URL: ${{ https://titansoftjira.atlassian.net }}        # 例如：https://your-org.atlassian.net
+          JIRA_USER_EMAIL: ${{ leo.chiang@titansoft.com.sg }}    # 你的 Jira 帳號 email
+          JIRA_API_TOKEN: ${{ ATATT3xFfGF0gWGP6l7Qz_GZGdGsr4-FpdjPPzAutA70UWw5MGkGpIV0e1X19_DYdbNcW0WF9ajYeedDWnWeWzGKMH2-BaS7vdCN4dFBB2IeqGzb9Ew1hEQriyb-iTkpHy4Epe1-AOYbBLT0-UdyaNF1gV8_c_jBggmOknAN2NEG_NzFXuxyCYY=A255986D }}      # Jira API Token
+
+      # 2. 建立 Jira Issue（用 gajira-create）
+      - name: Create Jira issue in ROVO project
+        id: create
+        uses: atlassian/gajira-create@v3
+        with:
+          project: 'ROVO'                # ← 這邊填 Jira 專案 Key，請確認你的專案代碼
+          issuetype: 'Task'              # 或 Story / Bug / 你想要的 Issue Type
+          summary: ${{ github.event.issue.title }}
+          description: |
+            This issue was created from GitHub.
+
+            *Repository:* ${{ github.repository }}
+            *GitHub Issue:* ${{ github.event.issue.html_url }}
+
+            *Original description:*
+            ${{ github.event.issue.body }}
+
+      # 3.（可選）Log 出 Jira issue key
+      - name: Log created Jira issue
+        run: echo "Created Jira issue: ${{ steps.create.outputs.issue }}"
