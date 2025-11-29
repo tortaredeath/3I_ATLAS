@@ -4,19 +4,11 @@ on:
   issues:
     types: [opened]
 
-# 這個 block 你可以：
-# 1) 完全刪掉，或
-# 2) 改成 repository-projects
-permissions:
-  contents: read
-  issues: write
-  repository-projects: write   # ⬅️ 把原本的 projects: write 改成這行
-
 jobs:
   set-progress:
     runs-on: ubuntu-latest
 
-    # 這邊把 PAT 放進 GH_TOKEN，給 gh CLI 用
+    # 統一把 PAT 塞到 GH_TOKEN 給 gh CLI 用
     env:
       GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
 
@@ -43,7 +35,7 @@ jobs:
                 item { id }
               }
             }
-          ' -f project=PVT_kwH0ADBtMs4BJYJc -f item="$ISSUE_ID"
+          ' -f project=PVT_kwH0ADBtMs4A2aSc -f item="$ISSUE_ID"
 
           echo "📌 設定 Progress = Todo…"
           gh api graphql -f query='
@@ -58,10 +50,10 @@ jobs:
               }
             }
           ' \
-          -f project=PVT_kwH0ADBtMs4BJYJc \
+          -f project=PVT_kwH0ADBtMs4A2aSc \
           -f item="$ISSUE_ID" \
-          -f field=PVTSSF_LAHOADBtMs4BJYJczg5j9EA \
-          -f option=7434d06d
+          -f field=PVTSSF_LAHOADBtMs4BJYJczg5j9EA \  # ← 這裡換成你在 projects/1 抓到的 PROGRESS_FIELD_ID
+          -f option=7434d06d                           # ← 這裡換成你在 projects/1 抓到的 Todo option ID
 
       - name: Done
         run: echo "🚀 Progress 已自動設為 Todo！"
