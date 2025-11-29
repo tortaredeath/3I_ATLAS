@@ -8,8 +8,8 @@ jobs:
   sync-status-to-jira:
     runs-on: ubuntu-latest
 
-    # 只處理 status: 開頭的 label
-    if: startsWith(github.event.label.name, 'status:')
+    # 只在 label 名稱以 status: 開頭時執行
+    if: ${{ github.event.label.name =~ '^status:' }}
 
     steps:
       - name: Debug status label
@@ -23,7 +23,7 @@ jobs:
           JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
-      # 2. 從 GitHub issue 的 labels 找出 jira:<ISSUE_KEY>
+      # 2. 從 labels 找出 jira:KEY
       - name: Extract Jira issue key from labels
         id: get_jira_key
         uses: actions/github-script@v7
@@ -31,36 +31,4 @@ jobs:
           result-encoding: string
           script: |
             const labels = context.payload.issue.labels || [];
-            const jiraLabel = labels.find(l => l.name.startsWith('jira:'));
-            if (!jiraLabel) {
-              core.setFailed('No jira:<KEY> label found on this issue.');
-            }
-            const key = jiraLabel.name.replace('jira:', '');
-            core.info(`Found Jira key: ${key}`);
-            return key;
-
-      # 3. 根據加上的 status label 決定要用哪個 Jira transition
-      - name: Decide Jira transition name
-        id: decide_transition
-        run: |
-          label="${{ github.event.label.name }}"
-          echo "Label is: $label"
-
-          if [ "$label" = "status:todo" ]; then
-            echo "transition_name=To Do" >> $GITHUB_OUTPUT
-          elif [ "$label" = "status:doing" ]; then
-            echo "transition_name=In Progress" >> $GITHUB_OUTPUT
-          elif [ "$label" = "status:done" ]; then
-            echo "transition_name=Done" >> $GITHUB_OUTPUT
-          else
-            echo "Unknown status label, skip Jira transition."
-            echo "transition_name=" >> $GITHUB_OUTPUT
-          fi
-
-      # 4. 對 Jira issue 做狀態轉換
-      - name: Transition Jira issue
-        if: steps.decide_transition.outputs.transition_name != ''
-        uses: atlassian/gajira-transition@v3
-        with:
-          issue: ${{ steps.get_jira_key.outputs.result }}
-          transition: ${{ steps.decide_transition.outputs.transition_name }}
+            const jiraLabel = labels.find(l =>
