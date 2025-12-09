@@ -1,0 +1,56 @@
+{
+  "errors": {
+    "validation": "驗證錯誤",
+    "notFound": "找不到資源",
+    "unauthorized": "未經授權的存取",
+    "forbidden": "存取被拒絕",
+    "serverError": "伺服器內部錯誤"
+  },
+  "success": {
+    "created": "資源建立成功",
+    "updated": "資源更新成功",
+    "deleted": "資源刪除成功"
+  },
+  "auth": {
+    "loginSuccess": "登入成功",
+    "logoutSuccess": "登出成功",
+    "registerSuccess": "註冊成功",
+    "invalidCredentials": "無效的登入資訊",
+    "tokenExpired": "令牌已過期",
+    "emailExists": "電子郵件已註冊",
+    "usernameExists": "使用者名稱已被使用",
+    "accountLocked": "帳戶因多次登入失敗而暫時鎖定",
+    "accountDeactivated": "帳戶已被停用",
+    "profileUpdated": "個人資料更新成功",
+    "passwordChanged": "密碼變更成功",
+    "incorrectPassword": "目前密碼不正確"
+  },
+  "events": {
+    "created": "活動建立成功",
+    "updated": "活動更新成功",
+    "deleted": "活動刪除成功",
+    "notFound": "找不到活動"
+  },
+  "articles": {
+    "created": "文章建立成功",
+    "updated": "文章更新成功",
+    "deleted": "文章刪除成功",
+    "notFound": "找不到文章"
+  },
+  "banners": {
+    "created": "橫幅建立成功",
+    "updated": "橫幅更新成功",
+    "deleted": "橫幅刪除成功",
+    "notFound": "找不到橫幅"
+  },
+  "partners": {
+    "created": "合作夥伴建立成功",
+    "updated": "合作夥伴更新成功",
+    "deleted": "合作夥伴刪除成功",
+    "notFound": "找不到合作夥伴"
+  },
+  "association": {
+    "updated": "協會資訊更新成功",
+    "notFound": "找不到協會資訊"
+  }
+}

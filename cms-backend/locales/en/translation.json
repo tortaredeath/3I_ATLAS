@@ -1,0 +1,56 @@
+{
+  "errors": {
+    "validation": "Validation Error",
+    "notFound": "Resource not found",
+    "unauthorized": "Unauthorized access",
+    "forbidden": "Access forbidden",
+    "serverError": "Internal server error"
+  },
+  "success": {
+    "created": "Resource created successfully",
+    "updated": "Resource updated successfully",
+    "deleted": "Resource deleted successfully"
+  },
+  "auth": {
+    "loginSuccess": "Login successful",
+    "logoutSuccess": "Logout successful",
+    "registerSuccess": "Registration successful",
+    "invalidCredentials": "Invalid credentials",
+    "tokenExpired": "Token has expired",
+    "emailExists": "Email already registered",
+    "usernameExists": "Username already taken",
+    "accountLocked": "Account temporarily locked due to too many failed attempts",
+    "accountDeactivated": "Account has been deactivated",
+    "profileUpdated": "Profile updated successfully",
+    "passwordChanged": "Password changed successfully",
+    "incorrectPassword": "Current password is incorrect"
+  },
+  "events": {
+    "created": "Event created successfully",
+    "updated": "Event updated successfully",
+    "deleted": "Event deleted successfully",
+    "notFound": "Event not found"
+  },
+  "articles": {
+    "created": "Article created successfully",
+    "updated": "Article updated successfully",
+    "deleted": "Article deleted successfully",
+    "notFound": "Article not found"
+  },
+  "banners": {
+    "created": "Banner created successfully",
+    "updated": "Banner updated successfully",
+    "deleted": "Banner deleted successfully",
+    "notFound": "Banner not found"
+  },
+  "partners": {
+    "created": "Partner created successfully",
+    "updated": "Partner updated successfully",
+    "deleted": "Partner deleted successfully",
+    "notFound": "Partner not found"
+  },
+  "association": {
+    "updated": "Association information updated successfully",
+    "notFound": "Association information not found"
+  }
+}
